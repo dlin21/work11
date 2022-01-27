@@ -3,54 +3,56 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
-int rand_num(){
-  int err = open("/dev/urandom", O_RDONLY);
+int rand_num(int data){
+  int rand;
+  int err = read(data, &rand, sizeof(rand));
   if(err == -1){
-    printf("%s\n", strerror(errno));
+    printf("error: %s", strerror(errno));
     return 0;
   }
-  unsigned int genRand = 0;
-  // & operator copies a bit to the result
-  read(err, &genRand, sizeof(&genRand));
-  return genRand;
+  return rand;
 }
 
 int main() {
-  unsigned int rand1[10], i, err;
+  int rand1[10], i, err;
+  printf("Generating random numbers:\n");
+  int data = open("/dev/random", O_RDONLY);
+  for(int i=0; i<10; i++){
+    rand1[i] = rand_num(data);
+    printf("\trandom %d: %u\n", i, rand1[i]);
+  }
 
-  printf("Generating random numbers:");
-  for(i=0; i<10; i++) printf("\n\trandom %d: %u", i, rand1[i]);
-  printf("\n");
-
-  printf("\nWriting numbers to file ...");
-  int file = open("out.txt", O_CREAT | O_RDWR, 0644);
+  printf("Writing numbers to file ...\n");
+  int file = open("out.txt", O_CREAT | O_WRONLY | O_EXCL, 0644);
   if(file == -1){
-    printf("%s\n", strerror(errno));
+    printf("error: %s\n", strerror(errno));
     return 0;
   }
+
   err = write(file, rand1, sizeof(rand1));
   if(err == -1){
-    printf("%s\n", strerror(errno));
+    printf("error: %s\n", strerror(errno));
     return 0;
   }
-  printf("\n");
 
-  printf("\nReading numbers from file...");
+  printf("Reading numbers from file...");
   file = open("out.txt", O_RDONLY);
   if(err == -1){
-    printf("%s\n", strerror(errno));
+    printf("error: %s\n", strerror(errno));
     return 0;
   }
+
   unsigned int rand2[10];
   err = read(file, rand2, sizeof(rand2));
   if(err == -1){
-    printf("%s\n", strerror(errno));
+    printf("error: %s\n", strerror(errno));
     return 0;
   }
 
-
   printf("\nVerification that written values were the same\n");
-  for(i=0; i<10; i++) printf("\n\trandom %d: %u", i , rand2[i]);
-  printf("\n");
+  for(i=0; i<10; i++) printf("\trandom %d: %u\n", i , rand2[i]);
+  
+  return 0;
 }
